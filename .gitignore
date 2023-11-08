@@ -1,2 +1,5 @@
 # Project exclude paths
 /cmake-build-debug/
+/venv/
+tracks_features.csv
+output.csv
