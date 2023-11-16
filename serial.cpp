@@ -3,48 +3,19 @@
 // Taken from tutorial at http://reasonabledeviations.com/2019/10/02/k-means-in-cpp/
 //
 
-#include <ctime>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <vector>
 #include <chrono>
-#include "csv-parser/csv.hpp"
+#include "point.h"
 
 using namespace std;
-using namespace csv;
 
 string xcol;
 string ycol;
 string zcol;
 
 double converge_threshold = 1e-7;
-
-struct Point {
-    double x, y, z;     // coordinates
-    int cluster;        // which cluster the point belongs to
-    double minDist;     // distance to nearest cluster center
-
-    Point() :
-        x(0.0),
-        y(0.0),
-        z(0.0),
-        cluster(-1),
-        minDist(__DBL_MAX__) {}
-
-    Point(double x, double y, double z) :
-        x(x),
-        y(y),
-        z(z),
-        cluster(-1),
-        minDist(__DBL_MAX__) {}
-
-    double distance(Point p) {
-        return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) + (p.z - z) * (p.z - z);
-    }
-};
-
-vector<Point> readcsv(string filepath);
 
 int kMeansClustering(vector<Point>* points, int k);
 
@@ -66,7 +37,7 @@ int main(int argc, char* argv[]) {
     // Read from csv file
     auto before = chrono::high_resolution_clock::now();
     cout << "Loading points from csv (this may take a while)..." << endl;
-    vector<Point> points = readcsv(filepath);
+    vector<Point> points = readcsv(filepath, xcol, ycol, zcol);
     auto after = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(after - before);
     cout << points.size() << " points loaded in " << duration.count() << "ms." << endl;
@@ -90,39 +61,6 @@ int main(int argc, char* argv[]) {
     cout << "Written to output.csv" << endl;
 }
 
-vector<Point> readcsv(string filepath) {
-    CSVReader reader(filepath);
-    vector<Point> points;
-    double x, y, z;
-
-    int maxct = 1000;
-    int ct = 0;
-    for (auto& row: reader) {
-        ct++;
-        if (row[xcol].is_num()) {
-            x = row[xcol].get<double>();
-        } else {
-            cerr << "Value \"" << row[xcol] << "\" is not numeric." << endl;
-            exit(2);
-        }
-        if (row[ycol].is_num()) {
-            y = row[ycol].get<double>();
-        } else {
-            cerr << "Value \"" << row[ycol] << "\" is not numeric." << endl;
-            exit(3);
-        }
-        if (row[xcol].is_num()) {
-            z = row[zcol].get<double>();
-        } else {
-            cerr << "Value \"" << row[zcol] << "\" is not numeric." << endl;
-            exit(4);
-        }
-        points.emplace_back(x, y, z);
-//        if (ct == maxct) break;
-    }
-    return points;
-}
-
 int kMeansClustering(vector<Point>* points, int k) {
     // Pick k points at random to create centroids
     vector<Point> centroids;
@@ -141,9 +79,9 @@ int kMeansClustering(vector<Point>* points, int k) {
     while (!hasConverged) {
         epochs++;
         // Assign each point to the nearest centroid
-        for (vector<Point>::iterator c = begin(centroids); c != end(centroids); c++) {
+        for (auto c = begin(centroids); c != end(centroids); c++) {
             int clusterId = c - begin(centroids);
-            for (vector<Point>::iterator it = points->begin(); it != points->end(); it++) {
+            for (auto it = points->begin(); it != points->end(); it++) {
                 Point p = *it;
                 double dist = c->distance(p);
                 if (dist < p.minDist) {
@@ -163,7 +101,7 @@ int kMeansClustering(vector<Point>* points, int k) {
         }
 
         // Iterate over points to append data to centroids
-        for (vector<Point>::iterator it = points->begin(); it != points->end(); it++) {
+        for (auto it = points->begin(); it != points->end(); it++) {
             int clusterId = it->cluster;
             nPoints[clusterId] += 1;
             sumX[clusterId] += it->x;
@@ -175,7 +113,7 @@ int kMeansClustering(vector<Point>* points, int k) {
 
         // Compute the new centroids
         bool shouldEnd = true;
-        for (vector<Point>::iterator c = begin(centroids); c != end(centroids); c++) {
+        for (auto c = begin(centroids); c != end(centroids); c++) {
             int clusterId = c - begin(centroids);
             double oldx = c->x;
             double oldy = c->y;
