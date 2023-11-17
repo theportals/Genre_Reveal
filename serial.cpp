@@ -81,14 +81,14 @@ int kMeansClustering(vector<Point>* points, int k) {
         // Assign each point to the nearest centroid
         for (auto c = begin(centroids); c != end(centroids); c++) {
             int clusterId = c - begin(centroids);
-            for (auto it = points->begin(); it != points->end(); it++) {
-                Point p = *it;
+            for (auto & point : *points) {
+                Point p = point;
                 double dist = c->distance(p);
                 if (dist < p.minDist) {
                     p.minDist = dist;
                     p.cluster = clusterId;
                 }
-                *it = p;
+                point = p;
             }
         }
 
@@ -101,14 +101,14 @@ int kMeansClustering(vector<Point>* points, int k) {
         }
 
         // Iterate over points to append data to centroids
-        for (auto it = points->begin(); it != points->end(); it++) {
-            int clusterId = it->cluster;
+        for (auto & point : *points) {
+            int clusterId = point.cluster;
             nPoints[clusterId] += 1;
-            sumX[clusterId] += it->x;
-            sumY[clusterId] += it->y;
-            sumZ[clusterId] += it->z;
+            sumX[clusterId] += point.x;
+            sumY[clusterId] += point.y;
+            sumZ[clusterId] += point.z;
 
-            it->minDist = __DBL_MAX__; // reset distance
+            point.minDist = __DBL_MAX__; // reset distance
         }
 
         // Compute the new centroids
