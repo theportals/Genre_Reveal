@@ -19,22 +19,25 @@ string zcol;
 
 double converge_threshold = 1e-7;
 
+int threadCount;
+
 int kMeansClustering(vector<Point>* points, int k);
 
 int main(int argc, char* argv[]) {
     string filepath;
 
-    if (argc != 6) {
-        cout << "Usage: shared_cpu.exe <filepath to csv> <number of clusters> <x column key> <y column key> <z column key>" << endl;
+    if (argc != 7) {
+        cout << "Usage: shared_cpu.exe <number of threads> <filepath to csv> <number of clusters> <x column key> <y column key> <z column key>" << endl;
         return -1;
     }
 
     // Initialize arguments
-    filepath = argv[1];
-    int k = strtol(argv[2], nullptr, 10);
-    xcol = argv[3];
-    ycol = argv[4];
-    zcol = argv[5];
+    threadCount = strtol(argv[1], nullptr, 10);
+    filepath = argv[2];
+    int k = strtol(argv[3], nullptr, 10);
+    xcol = argv[4];
+    ycol = argv[5];
+    zcol = argv[6];
 
     // Read from csv file
     auto before = chrono::high_resolution_clock::now();
@@ -82,16 +85,13 @@ int kMeansClustering(vector<Point>* points, int k) {
         epochs++;
 
         // Assign each point to the nearest centroid in parallel
-#pragma omp parallel for
+#pragma omp parallel for num_threads(threadCount) default(none) shared(points, centroids, k)
         for (int i = 0; i < points->size(); i++) {
             for (int j = 0; j < k; j++) {
                 double dist = centroids[j].distance((*points)[i]);
                 if (dist < (*points)[i].minDist) {
-#pragma omp critical
-                    {
-                        (*points)[i].minDist = dist;
-                        (*points)[i].cluster = j;
-                    }
+                    (*points)[i].minDist = dist;
+                    (*points)[i].cluster = j;
                 }
             }
         }
@@ -118,7 +118,7 @@ int kMeansClustering(vector<Point>* points, int k) {
 
         // Compute the new centroids
         bool shouldEnd = true;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(threadCount) default(none) shared(k, centroids, sumX, sumY, sumZ, nPoints, converge_threshold, shouldEnd)
         for (int j = 0; j < k; j++) {
             double oldx = centroids[j].x;
             double oldy = centroids[j].y;
