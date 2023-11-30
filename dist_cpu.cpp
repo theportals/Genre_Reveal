@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
         srand(123);
         for (int i = 0; i < k; i++) {
             centroids[i] = points[rand() % dataSize];
+            printf("Centroid %d: (%f, %f, %f)\n", i, centroids[i].x, centroids[i].y, centroids[i].z);
         }
     }
 
@@ -134,31 +135,43 @@ int main(int argc, char* argv[]) {
     // Do our update step
     int epoch = 0;
     bool hasConverged = false;
-    Point oldCentroids[k];
-    Point rbuf[k];   // MPI requires the buffers to be separate
     while (!hasConverged) {
         epoch++;
+        if (my_rank == 0) {
+            printf("Epoch %d: \n", epoch);
+            for (int i = 0; i < k; i++) {
+                Point c = centroids[i];
+                printf("    c %d: (%f, %f, %f)\n", i, c.x, c.y, c.z);
+            }
+            printf("\n");
+        }
         // Assign each point to the nearest centroid
-        for (int i = 0; i < k; i++) {
-            Point c = centroids[i];
-            int clusterId = i;
-            for (auto &p : myData) {
+        for (auto &p : myData) {
+            for (int i = 0; i < k; i++) {
+                Point c = centroids[i];
                 double dist = c.distance(p);
                 if (dist < p.minDist) {
                     p.minDist = dist;
-                    p.cluster = clusterId;
+                    p.cluster = i;
                 }
             }
         }
-        vector<int> nPoints;
-        vector<double> sumX, sumY, sumZ;
+        // MPI requires the send and receive buffers to be separate
+        int nPoints[k];
+        int nPoints_r[k];
+        double sumX[k], sumY[k], sumZ[k];
+        double sumX_r[k], sumY_r[k], sumZ_r[k];
 
         // Initialize sum arrays with zeros
         for (int i = 0; i < k; i++) {
-            nPoints.push_back(0);
-            sumX.push_back(0.0);
-            sumY.push_back(0.0);
-            sumZ.push_back(0.0);
+            nPoints[i] = 0;
+            nPoints_r[i] = 0;
+            sumX[i] = 0;
+            sumY[i] = 0;
+            sumZ[i] = 0;
+            sumX_r[i] = 0;
+            sumY_r[i] = 0;
+            sumZ_r[i] = 0;
         }
 
         // Iterate over points to append data to centroids
@@ -171,37 +184,35 @@ int main(int argc, char* argv[]) {
 
             p.minDist = DBL_MAX; // reset distance
         }
+        MPI_Reduce(&sumX, &sumX_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&sumY, &sumY_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&sumZ, &sumZ_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(&nPoints, &nPoints_r, k, MPI_INT, MPI_SUM, 0, comm);
 
-        // Compute new centroids
-        for (int i = 0; i < k; i++) {
-            Point c = centroids[i];
-            oldCentroids[i] = c;
-            int clusterId = i;
+        if (my_rank == 0) {
+            printf("    sums:\n");
+            for (int i = 0; i < k; i++) {
+                printf("        %d: (%f, %f, %f), %d\n", i, sumX_r[i], sumY_r[i], sumZ_r[i], nPoints_r[i]);
 
-            c.x = sumX[clusterId] / nPoints[clusterId];
-            c.y = sumY[clusterId] / nPoints[clusterId];
-            c.z = sumZ[clusterId] / nPoints[clusterId];
-            centroids[i] = c;
+            }
+            printf("\n");
         }
 
-        // Average each thread's centroid on thread 0
-        // This operation will ADD the coordinates together, we need to divide them by thread count afterwards
-        MPI_Reduce(&centroids, &rbuf, k, mpi_point_type, mpi_sum_points_op, 0, comm);
-
+        // Compute the new centroids on rank 0
         bool shouldEnd = true;
         if (my_rank == 0) {
             for (int i = 0; i < k; i++) {
-                Point c = rbuf[i];
-                c.x /= threads;
-                c.y /= threads;
-                c.z /= threads;
+                Point c = centroids[i];
+                double oldx = c.x;
+                double oldy = c.y;
+                double oldz = c.z;
 
-                // Check how far the point has moved
-                Point old = oldCentroids[i];
-                double distMoved = (c.x - old.x) * (c.x - old.x) + (c.y - old.y) * (c.y - old.y) + (c.z - old.z) * (c.z - old.z);
+                c.x = sumX_r[i] / nPoints_r[i];
+                c.y = sumY_r[i] / nPoints_r[i];
+                c.z = sumZ_r[i] / nPoints_r[i];
+
+                double distMoved = (c.x - oldx) * (c.x - oldx) + (c.y - oldy) * (c.y - oldy) + (c.z - oldz) * (c.z - oldz);
                 if (distMoved > converge_threshold) shouldEnd = false;
-
-                // Put the centroid back into our centroids array
                 centroids[i] = c;
             }
         }

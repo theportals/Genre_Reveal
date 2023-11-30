@@ -111,6 +111,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Retrieve updated sums from device
+        // TODO: Make a function so we don't have this code in like twelve different 4-line blocks
         cudaErr = cudaMemcpy(nPoints_h, nPoints_d, sizeof(int) * k, cudaMemcpyDeviceToHost);
         cudaErr = cudaMemcpy(sumX_h, sumX_d, sizeof(double) * k, cudaMemcpyDeviceToHost);
         cudaErr = cudaMemcpy(sumY_h, sumY_d, sizeof(double) * k, cudaMemcpyDeviceToHost);
@@ -144,7 +145,17 @@ int main(int argc, char* argv[]) {
 
         hasConverged = shouldEnd;
         if (!hasConverged) {
-            // If we haven't converged, copy new centroids to device
+            // If we haven't converged, copy new centroids to device, reset sums and nPoints
+            for (int j = 0; j < k; j++) {
+                nPoints_h[j] = 0;
+                sumX_h[j] = 0.0;
+                sumY_h[j] = 0.0;
+                sumZ_h[j] = 0.0;
+            }
+            cudaErr = cudaMemcpy(nPoints_d, nPoints_h, sizeof(int) * k, cudaMemcpyHostToDevice);
+            cudaErr = cudaMemcpy(sumX_d, sumX_h, sizeof(double) * k, cudaMemcpyHostToDevice);
+            cudaErr = cudaMemcpy(sumY_d, sumY_h, sizeof(double) * k, cudaMemcpyHostToDevice);
+            cudaErr = cudaMemcpy(sumZ_d, sumZ_h, sizeof(double) * k, cudaMemcpyHostToDevice);
             cudaErr = cudaMemcpy(centroids_d, centroids_h, sizeof(Point) * k, cudaMemcpyHostToDevice);
             cudaDeviceSynchronize();
 

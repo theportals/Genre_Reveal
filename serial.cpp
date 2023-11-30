@@ -70,8 +70,8 @@ int kMeansClustering(vector<Point>* points, int k) {
     }
 
     // Used for calculating averages of cluster locations
-    vector<int> nPoints;
-    vector<double> sumX, sumY, sumZ;
+    vector<int> nPoints(k, 0);
+    vector<double> sumX(k, 0.0), sumY(k, 0.0), sumZ(k, 0.0);
 
     // Do our update step
     int epochs = 0;
@@ -79,9 +79,9 @@ int kMeansClustering(vector<Point>* points, int k) {
     while (!hasConverged) {
         epochs++;
         // Assign each point to the nearest centroid
-        for (auto c = begin(centroids); c != end(centroids); c++) {
-            int clusterId = c - begin(centroids);
-            for (auto & point : *points) {
+        for (auto & point : *points) {
+            for (auto c = begin(centroids); c != end(centroids); c++) {
+                int clusterId = c - begin(centroids);
                 Point p = point;
                 double dist = c->distance(p);
                 if (dist < p.minDist) {
@@ -94,10 +94,10 @@ int kMeansClustering(vector<Point>* points, int k) {
 
         // Initialize sum arrays with zeros
         for (int j = 0; j < k; j++) {
-            nPoints.push_back(0);
-            sumX.push_back(0.0);
-            sumY.push_back(0.0);
-            sumZ.push_back(0.0);
+            nPoints[j] = 0;
+            sumX[j] = 0;
+            sumY[j] = 0;
+            sumZ[j] = 0;
         }
 
         // Iterate over points to append data to centroids
@@ -124,10 +124,8 @@ int kMeansClustering(vector<Point>* points, int k) {
             c->z = sumZ[clusterId] / nPoints[clusterId];
 
             double distMoved = (c->x - oldx) * (c->x - oldx) + (c->y - oldy) * (c->y - oldy) + (c->z - oldz) * (c->z - oldz);
-//            printf("Cluster %d moved %f\n", clusterId, distMoved);
             if (distMoved > converge_threshold) shouldEnd = false;
         }
-//        cout << endl;
         hasConverged = shouldEnd;
     }
     return epochs;
