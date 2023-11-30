@@ -17,3 +17,7 @@ add_executable(dist_cpu dist_cpu.cpp
 
 
 target_link_libraries(dist_cpu PUBLIC MPI::MPI_CXX)
+
+# Clion has a weird workflow for CUDA on windows. Because you have to use the visual studio toolchain, other
+# implementations run much slower. Uncomment this line to include GPU implementations:
+# add_subdirectory("${PROJECT_SOURCE_DIR}/cuda" "${PROJECT_SOURCE_DIR}/cuda_output")

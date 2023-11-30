@@ -6,6 +6,7 @@
 #define GENRE_REVEAL_POINT_H
 #include <vector>
 #include "csv-parser/csv.hpp"
+#include <cfloat>
 
 using namespace std;
 using namespace csv;
@@ -20,14 +21,14 @@ struct Point {
             y(0.0),
             z(0.0),
             cluster(-1),
-            minDist(__DBL_MAX__) {}
+            minDist(DBL_MAX) {}
 
     Point(double x, double y, double z) :
             x(x),
             y(y),
             z(z),
             cluster(-1),
-            minDist(__DBL_MAX__) {}
+            minDist(DBL_MAX) {}
 
     double distance(Point p) const {
         return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) + (p.z - z) * (p.z - z);

@@ -108,7 +108,7 @@ int kMeansClustering(vector<Point>* points, int k) {
             sumY[clusterId] += point.y;
             sumZ[clusterId] += point.z;
 
-            point.minDist = __DBL_MAX__; // reset distance
+            point.minDist = DBL_MAX; // reset distance
         }
 
         // Compute the new centroids

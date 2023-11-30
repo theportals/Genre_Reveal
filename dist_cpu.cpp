@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
             sumY[clusterId] += p.y;
             sumZ[clusterId] += p.z;
 
-            p.minDist = __DBL_MAX__; // reset distance
+            p.minDist = DBL_MAX; // reset distance
         }
 
         // Compute new centroids
@@ -225,13 +225,13 @@ int main(int argc, char* argv[]) {
     if (my_rank == 0) {
         // TODO: Move this into point.h to avoid recycled code
         ofstream myfile;
-        myfile.open("dist_cpu_output2.csv");
+        myfile.open("output.csv");
         myfile << "x,y,z,c" << endl;
         for (auto &point: points) {
             myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
         }
         myfile.close();
-        cout << "Written to dist_cpu_output2.csv" << endl;
+        cout << "Written to output.csv" << endl;
     }
     // Close MPI
     MPI_Op_free(&mpi_sum_points_op);
