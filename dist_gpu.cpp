@@ -1,7 +1,8 @@
 /*
     Created by Bridger on 12/2/2023
     Adapted from shared_gpu and dist_cpu.
-    Compilation: nvcc -o dist_gpu dist_gpu.cpp point.cpp -std=c++11 -Xcompiler -fopenmp -lcudart -lm -D_MWAITXINTRIN_H_INCLUDED
+    Module load intel-mpi, module load cuda/12.2, module load gcc/8.5.0
+    Compilation: nvcc -o dist_gpu dist_gpu.cpp point.cpp -std=c++11 -Xcompiler -fopenmp -lcudart -lm
 */
 
 #include <iostream>
