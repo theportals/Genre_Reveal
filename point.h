@@ -76,4 +76,21 @@ vector<Point> readcsv(const string& filepath, const string& xcol, const string& 
     return points;
 }
 
+static void writeCSV(string path, Point* points, int numPoints) {
+    ofstream myfile;
+    myfile.open(path.c_str());
+    myfile << "x,y,z,c" << endl;
+    for (int i = 0; i < numPoints; i++) {
+        Point point = points[i];
+        myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
+    }
+    myfile.close();
+    cout << "Written to " << path << endl;
+
+}
+
+static void writeCSV(string path, vector<Point> points) {
+    writeCSV(path, points.data(), points.size());
+}
+
 #endif //GENRE_REVEAL_POINT_H

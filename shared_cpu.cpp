@@ -56,14 +56,10 @@ int main(int argc, char* argv[]) {
     cout << "Clustered with " << epochsTaken << " epochs in " << duration.count() << "ms." << endl;
 
     // Write to file
-    ofstream myfile;
-    myfile.open("shared_cpu.csv");
-    myfile << "x,y,z,c" << endl;
-    for (auto & point : points) {
-        myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
-    }
-    myfile.close();
-    cout << "Written to shared_cpu.csv" << endl;
+    string base = "shared_cpu_";
+    string extension = ".csv";
+    string path = base.append(to_string(threadCount)).append(extension);
+    writeCSV(path, points);
 }
 
 int kMeansClustering(vector<Point>* points, int k) {

@@ -51,14 +51,7 @@ int main(int argc, char* argv[]) {
     cout << "Clustered with " << epochsTaken << " epochs in " << duration.count() << "ms." << endl;
 
     // Write to file
-    ofstream myfile;
-    myfile.open("serial.csv");
-    myfile << "x,y,z,c" << endl;
-    for (auto & point : points) {
-        myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
-    }
-    myfile.close();
-    cout << "Written to serial.csv" << endl;
+    writeCSV("serial.csv", points);
 }
 
 int kMeansClustering(vector<Point>* points, int k) {

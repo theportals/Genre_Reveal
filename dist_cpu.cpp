@@ -238,15 +238,7 @@ int main(int argc, char* argv[]) {
 
     // Write to file
     if (my_rank == 0) {
-        // TODO: Move this into point.h to avoid recycled code
-        ofstream myfile;
-        myfile.open("dist_cpu.csv");
-        myfile << "x,y,z,c" << endl;
-        for (auto &point: points) {
-            myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
-        }
-        myfile.close();
-        cout << "Written to dist_cpu.csv" << endl;
+        writeCSV("dist_cpu.csv", points);
     }
     // Close MPI
     MPI_Op_free(&mpi_sum_points_op);
