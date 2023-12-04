@@ -10,6 +10,14 @@ string zcol;
 
 double converge_threshold = 1e-7;
 
+inline cudaError_t checkCuda(cudaError_t result, string errorMessage) {
+    if (result != cudaSuccess) {
+        fprintf(stderr, "%s\n", errorMessage.c_str());
+        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+    }
+    return result;
+}
+
 __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
 
 int main(int argc, char* argv[]) {
@@ -61,38 +69,27 @@ int main(int argc, char* argv[]) {
     auto sumZ_d = new double[k];
 
     // Allocate device memory
-    cudaError_t cudaErr = cudaSuccess;
     // CUDA likes arrays more than vectors
     Point* points_h = points.data();
     Point* centroids_h = centroids.data();
     Point* points_d;
     Point* centroids_d;
-    cudaErr = cudaMalloc((void **) &points_d, sizeof(Point) * points.size());
-    cudaErr = cudaMalloc((void **) &centroids_d, sizeof(Point) * k);
-    cudaErr = cudaMalloc((void **) &nPoints_d, sizeof(int) * k);
-    cudaErr = cudaMalloc((void **) &sumX_d, sizeof(double) * k);
-    cudaErr = cudaMalloc((void **) &sumY_d, sizeof(double) * k);
-    cudaErr = cudaMalloc((void **) &sumZ_d, sizeof(double) * k);
+    checkCuda(cudaMalloc((void **) &points_d, sizeof(Point) * points.size()), "Could not allocate points.");
+    checkCuda(cudaMalloc((void **) &centroids_d, sizeof(Point) * k), "Could not allocate centroids.");
+    checkCuda(cudaMalloc((void **) &nPoints_d, sizeof(int) * k), "Could not allocate nPoints.");
+    checkCuda(cudaMalloc((void **) &sumX_d, sizeof(double) * k), "Could not allocate sumX.");
+    checkCuda(cudaMalloc((void **) &sumY_d, sizeof(double) * k), "Could not allocate sumY.");
+    checkCuda(cudaMalloc((void **) &sumZ_d, sizeof(double) * k), "Could not allocate sumZ.");
     cudaDeviceSynchronize();
-
-    if (cudaErr != cudaSuccess) {
-        fprintf(stderr, "Failed to allocate device memory (error code %s)\n", cudaGetErrorString(cudaErr));
-        exit(-2);
-    }
 
     // Copy host variables to device
-    cudaErr = cudaMemcpy(points_d, points_h, sizeof(Point) * points.size(), cudaMemcpyHostToDevice);
-    cudaErr = cudaMemcpy(centroids_d, centroids_h, sizeof(Point) * k, cudaMemcpyHostToDevice);
-    cudaErr = cudaMemcpy(nPoints_d, nPoints_h, sizeof(int) * k, cudaMemcpyHostToDevice);
-    cudaErr = cudaMemcpy(sumX_d, sumX_h, sizeof(double) * k, cudaMemcpyHostToDevice);
-    cudaErr = cudaMemcpy(sumY_d, sumY_h, sizeof(double) * k, cudaMemcpyHostToDevice);
-    cudaErr = cudaMemcpy(sumZ_d, sumZ_h, sizeof(double) * k, cudaMemcpyHostToDevice);
+    checkCuda(cudaMemcpy(points_d, points_h, sizeof(Point) * points.size(), cudaMemcpyHostToDevice), "Could not copy points.");
+    checkCuda(cudaMemcpy(centroids_d, centroids_h, sizeof(Point) * k, cudaMemcpyHostToDevice), "Could not copy centroids.");
+    checkCuda(cudaMemcpy(nPoints_d, nPoints_h, sizeof(int) * k, cudaMemcpyHostToDevice), "Could not copy nPoints.");
+    checkCuda(cudaMemcpy(sumX_d, sumX_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumX.");
+    checkCuda(cudaMemcpy(sumY_d, sumY_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumY.");
+    checkCuda(cudaMemcpy(sumZ_d, sumZ_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumZ.");
     cudaDeviceSynchronize();
-
-    if (cudaErr != cudaSuccess) {
-        fprintf(stderr, "Failed to copy host variables to device (error code %s)\n", cudaGetErrorString(cudaErr));
-        exit(-3);
-    }
 
     // Update step
     int epochs = 0;
@@ -103,25 +100,14 @@ int main(int argc, char* argv[]) {
 
         // Assign each point to the nearest centroid
         updateCentroids<<<ceil((double) points.size() / blockSize), blockSize>>>(points_d, centroids_d, nPoints_d, sumX_d, sumY_d, sumZ_d, k, points.size());
-        cudaErr = cudaDeviceSynchronize();
-
-        if (cudaErr != cudaSuccess) {
-            fprintf(stderr, "Failed to start kernel (error code %s)\n", cudaGetErrorString(cudaErr));
-            exit(-4);
-        }
+        checkCuda(cudaDeviceSynchronize(), "Could not run kernel.");
 
         // Retrieve updated sums from device
-        // TODO: Make a function so we don't have this code in like twelve different 4-line blocks
-        cudaErr = cudaMemcpy(nPoints_h, nPoints_d, sizeof(int) * k, cudaMemcpyDeviceToHost);
-        cudaErr = cudaMemcpy(sumX_h, sumX_d, sizeof(double) * k, cudaMemcpyDeviceToHost);
-        cudaErr = cudaMemcpy(sumY_h, sumY_d, sizeof(double) * k, cudaMemcpyDeviceToHost);
-        cudaErr = cudaMemcpy(sumZ_h, sumZ_d, sizeof(double) * k, cudaMemcpyDeviceToHost);
+        checkCuda(cudaMemcpy(nPoints_h, nPoints_d, sizeof(int) * k, cudaMemcpyDeviceToHost), "Could not copy nPoints from device.");
+        checkCuda(cudaMemcpy(sumX_h, sumX_d, sizeof(double) * k, cudaMemcpyDeviceToHost), "Could not copy sumX from device.");
+        checkCuda(cudaMemcpy(sumY_h, sumY_d, sizeof(double) * k, cudaMemcpyDeviceToHost), "Could not copy sumY from device.");
+        checkCuda(cudaMemcpy(sumZ_h, sumZ_d, sizeof(double) * k, cudaMemcpyDeviceToHost), "Could not copy sumZ from device.");
         cudaDeviceSynchronize();
-
-        if (cudaErr != cudaSuccess) {
-            fprintf(stderr, "Failed to copy updated points from device (error code %s)\n", cudaGetErrorString(cudaErr));
-            exit(-5);
-        }
 
 
         // Compute the new centroids. Because we usually have a small k, this doesn't need to be parallel
@@ -152,17 +138,12 @@ int main(int argc, char* argv[]) {
                 sumY_h[j] = 0.0;
                 sumZ_h[j] = 0.0;
             }
-            cudaErr = cudaMemcpy(nPoints_d, nPoints_h, sizeof(int) * k, cudaMemcpyHostToDevice);
-            cudaErr = cudaMemcpy(sumX_d, sumX_h, sizeof(double) * k, cudaMemcpyHostToDevice);
-            cudaErr = cudaMemcpy(sumY_d, sumY_h, sizeof(double) * k, cudaMemcpyHostToDevice);
-            cudaErr = cudaMemcpy(sumZ_d, sumZ_h, sizeof(double) * k, cudaMemcpyHostToDevice);
-            cudaErr = cudaMemcpy(centroids_d, centroids_h, sizeof(Point) * k, cudaMemcpyHostToDevice);
+            checkCuda(cudaMemcpy(nPoints_d, nPoints_h, sizeof(int) * k, cudaMemcpyHostToDevice), "Could not copy nPoints.");
+            checkCuda(cudaMemcpy(sumX_d, sumX_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumX.");
+            checkCuda(cudaMemcpy(sumY_d, sumY_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumY.");
+            checkCuda(cudaMemcpy(sumZ_d, sumZ_h, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumZ.");
+            checkCuda(cudaMemcpy(centroids_d, centroids_h, sizeof(Point) * k, cudaMemcpyHostToDevice), "Could not copy centroids.");
             cudaDeviceSynchronize();
-
-            if (cudaErr != cudaSuccess) {
-                fprintf(stderr, "Failed to copy new centroids to device (error code %s)\n", cudaGetErrorString(cudaErr));
-                exit(-6);
-            }
         }
     }
     after = chrono::high_resolution_clock::now();
@@ -170,12 +151,7 @@ int main(int argc, char* argv[]) {
     cout << "Clustered with " << epochs << " epochs in " << duration.count() << "ms." << endl;
 
     // Copy converged points from device
-    cudaErr = cudaMemcpy(points_h, points_d, sizeof(Point) * points.size(), cudaMemcpyDeviceToHost);
-
-    if (cudaErr != cudaSuccess) {
-        fprintf(stderr, "Failed to copy converged points from device (error code %s)\n", cudaGetErrorString(cudaErr));
-        exit(-7);
-    }
+    checkCuda(cudaMemcpy(points_h, points_d, sizeof(Point) * points.size(), cudaMemcpyDeviceToHost), "Could not copy converged points from device.");
 
     // Write to file
     ofstream myfile;
