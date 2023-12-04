@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(&k, 1, MPI_INT, 0, comm);
 
     // It's easier to MPI_Bcast arrays over than vectors
-    Point centroids[k];
+    auto centroids = new Point[k];
     if (my_rank == 0) {
         // Pick k points at random to create centroids
         srand(123);
@@ -101,8 +101,8 @@ int main(int argc, char* argv[]) {
 
     MPI_Bcast(&centroids, k, mpi_point_type, 0, comm);
 
-    int dataCounts[threads];
-    int displacements[threads];
+    auto dataCounts = new int[threads];
+    auto displacements = new int[threads];
     if (my_rank == 0) {
         // Figure out how many numbers each process should get
         int runningDisplacements = 0;
@@ -157,10 +157,14 @@ int main(int argc, char* argv[]) {
             }
         }
         // MPI requires the send and receive buffers to be separate
-        int nPoints[k];
-        int nPoints_r[k];
-        double sumX[k], sumY[k], sumZ[k];
-        double sumX_r[k], sumY_r[k], sumZ_r[k];
+        auto nPoints = new int[k];
+        auto nPoints_r = new int[k];
+        auto sumX = new double[k];
+        auto sumY = new double[k];
+        auto sumZ = new double[k];
+        auto sumX_r = new double[k];
+        auto sumY_r = new double[k];
+        auto sumZ_r = new double[k];
 
         // Initialize sum arrays with zeros
         for (int i = 0; i < k; i++) {
@@ -236,13 +240,13 @@ int main(int argc, char* argv[]) {
     if (my_rank == 0) {
         // TODO: Move this into point.h to avoid recycled code
         ofstream myfile;
-        myfile.open("output.csv");
+        myfile.open("dist_cpu.csv");
         myfile << "x,y,z,c" << endl;
         for (auto &point: points) {
             myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
         }
         myfile.close();
-        cout << "Written to output.csv" << endl;
+        cout << "Written to dist_cpu.csv" << endl;
     }
     // Close MPI
     MPI_Op_free(&mpi_sum_points_op);

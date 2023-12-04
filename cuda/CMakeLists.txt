@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.26)
-project(Genre_Reveal_Cuda CUDA)
+project(Genre_Reveal_Cuda LANGUAGES CXX CUDA)
 
 find_package(CUDA)
 set(CMAKE_CXX_STANDARD 17)

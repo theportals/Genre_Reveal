@@ -52,13 +52,13 @@ int main(int argc, char* argv[]) {
 
     // Write to file
     ofstream myfile;
-    myfile.open("output.csv");
+    myfile.open("serial.csv");
     myfile << "x,y,z,c" << endl;
     for (auto & point : points) {
         myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
     }
     myfile.close();
-    cout << "Written to output.csv" << endl;
+    cout << "Written to serial.csv" << endl;
 }
 
 int kMeansClustering(vector<Point>* points, int k) {

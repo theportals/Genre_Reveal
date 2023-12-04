@@ -179,14 +179,14 @@ int main(int argc, char* argv[]) {
 
     // Write to file
     ofstream myfile;
-    myfile.open("output.csv");
+    myfile.open("shared_gpu.csv");
     myfile << "x,y,z,c" << endl;
     for (int i = 0; i < points.size(); i++) {
         Point point = points_h[i];
         myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
     }
     myfile.close();
-    cout << "Written to output.csv" << endl;
+    cout << "Written to shared_gpu.csv" << endl;
 }
 
 __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n) {
