@@ -1,15 +1,15 @@
 //
 // Created by Tom on 11/16/2023.
+// Edited by Bridger to use new csv.h on 12/4/2023.
 //
 
 #ifndef GENRE_REVEAL_POINT_H
 #define GENRE_REVEAL_POINT_H
 #include <vector>
-#include "csv-parser/csv.hpp"
+#include "csv-parser/csv.h"
 #include <cfloat>
 
 using namespace std;
-using namespace csv;
 
 struct Point {
     double x, y, z;     // coordinates
@@ -44,34 +44,26 @@ struct Point {
  * @return points
  */
 vector<Point> readcsv(const string& filepath, const string& xcol, const string& ycol, const string& zcol) {
-    CSVReader reader(filepath);
+    CSVParser csvParser(filepath);
+    if (!csvParser.parse()) {
+        cerr << "Error parsing CSV file." << endl;
+        exit(1);
+    }
+
+    const auto& data = csvParser.getData();
+
     vector<Point> points;
     double x, y, z;
 
-//    int maxct = 1000;
-    int ct = 0;
-    for (auto& row: reader) {
-        ct++;
-        if (row[xcol].is_num()) {
-            x = row[xcol].get<double>();
+    for (const auto& row : data) {
+        double x, y, z;
+        
+        if (istringstream(row[xcol]) >> x && istringstream(row[ycol]) >> y && istringstream(row[zcol]) >> z) {
+            points.emplace_back(x, y, z);
         } else {
-            cerr << "Value \"" << row[xcol] << "\" is not numeric." << endl;
+            cerr << "Error converting values to numeric in row." << endl;
             exit(2);
         }
-        if (row[ycol].is_num()) {
-            y = row[ycol].get<double>();
-        } else {
-            cerr << "Value \"" << row[ycol] << "\" is not numeric." << endl;
-            exit(3);
-        }
-        if (row[xcol].is_num()) {
-            z = row[zcol].get<double>();
-        } else {
-            cerr << "Value \"" << row[zcol] << "\" is not numeric." << endl;
-            exit(4);
-        }
-        points.emplace_back(x, y, z);
-//        if (ct == maxct) break;
     }
     return points;
 }
