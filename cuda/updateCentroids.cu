@@ -1,7 +1,7 @@
 /*
     Created by Bridger 12/4/2023
     Modeled after shared_gpu
-    Compilation: nvcc -c updateCentroids.cu -o updateCentroids.exe
+    Compilation: nvcc -c updateCentroids.cu -o updateCentroids.o
 */
 
 #include <cuda.h>
@@ -32,6 +32,7 @@ __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, d
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (tid < n) {
+        // Assign each point to its nearest centroid
         Point p = points[tid];
 
         for (int j = 0; j < k; j++) {
@@ -44,15 +45,14 @@ __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, d
             }
         }
 
+        // Append data to centroids
         int cluster = p.cluster;
         atomicAdd(&nPoints[cluster], 1);
         atomicAddDouble(&sumX[cluster], p.x);
         atomicAddDouble(&sumY[cluster], p.y);
         atomicAddDouble(&sumZ[cluster], p.z);
 
-//        printf("Assigning point %d to cluster %d\n", tid, cluster);
-
-        p.minDist = DBL_MAX;
+        p.minDist = DBL_MAX; // reset distance
         points[tid] = p;
     }
 }

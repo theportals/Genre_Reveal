@@ -202,7 +202,7 @@ int main(int argc, char* argv[]) {
 //            printf("\n");
 //        }
 
-        // Compute the new centroids on rank 0
+        // Compute the new centroids on thread 0
         bool shouldEnd = true;
         if (my_rank == 0) {
             for (int i = 0; i < k; i++) {

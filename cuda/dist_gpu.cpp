@@ -1,8 +1,11 @@
 /*
     Created by Bridger on 12/2/2023
     Adapted from shared_gpu and dist_cpu.
-    Module load intel-mpi, module load cuda/12.2, module load gcc/8.5.0
-    Compilation: mpixx -o dist_gpu dist_gpu.cpp -lcudart
+    Module load gcc/8.5.0, module load intel-mpi, module load cuda/12.2,
+    Compilation:
+        mpicxx -c dist_gpu.cpp -o dist_gpu.o
+        nvcc -c updateCentroids.cu -o updateCentroids.o
+        mpicxx dist_gpu.o updateCentroids.o -lcudart -o dist_gpu
 */
 
 // dist_gpu.cpp
@@ -115,28 +118,78 @@ int main(int argc, char** argv) {
 
     MPI_Bcast(centroids, k, mpi_point_type, 0, MPI_COMM_WORLD);
 
-    // Call the CUDA function
+    // Update step
+    int epoch = 0;
+    bool hasConverged = false;
     auto before = chrono::high_resolution_clock::now();
-    launch_update_centroids(myData, centroids, nPoints, sumX, sumY, sumZ, k, myDataCount, myRank);
+    if (myRank == 0) cout << "Beginning clustering..." << endl;
+    while (!hasConverged) {
+        epoch++;
+        // MPI requires the send and receive buffers to be separate
+        auto nPoints_r = new int[k];
+        auto sumX_r = new double[k];
+        auto sumY_r = new double[k];
+        auto sumZ_r = new double[k];
+
+        // Initialize/reset sum arrays with zeros
+        for (int i = 0; i < k; i++) {
+            nPoints[i] = 0;
+            nPoints_r[i] = 0;
+            sumX[i] = 0;
+            sumY[i] = 0;
+            sumZ[i] = 0;
+            sumX_r[i] = 0;
+            sumY_r[i] = 0;
+            sumZ_r[i] = 0;
+        }
+
+        // Call the CUDA function
+        // Function assigns each point to nearest centroid, updates counts
+        launch_update_centroids(myData, centroids, nPoints, sumX, sumY, sumZ, k, myDataCount, myRank);
+        MPI_Barrier(comm);
+
+        MPI_Reduce(sumX, sumX_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(sumY, sumY_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(sumZ, sumZ_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(nPoints, nPoints_r, k, MPI_INT, MPI_SUM, 0, comm);
+
+        // Compute new centroids on thread 0
+        bool shouldEnd = true;
+        if (myRank == 0) {
+            for (int i = 0; i < k; i++) {
+                Point c = centroids[i];
+                double oldx = c.x;
+                double oldy = c.y;
+                double oldz = c.z;
+
+                c.x = sumX_r[i] / nPoints_r[i];
+                c.y = sumY_r[i] / nPoints_r[i];
+                c.z = sumZ_r[i] / nPoints_r[i];
+
+                double distMoved = (c.x - oldx) * (c.x - oldx) + (c.y - oldy) * (c.y - oldy) + (c.z - oldz) * (c.z - oldz);
+                if (distMoved > converge_threshold) shouldEnd = false;
+                centroids[i] = c;
+            }
+            hasConverged = shouldEnd;
+        }
+        MPI_Bcast(&hasConverged, 1, MPI_C_BOOL, 0, comm);
+        if (!hasConverged) {
+            // If we haven't converged, send centroids back out to other cores
+            MPI_Bcast(centroids, k, mpi_point_type, 0, comm);
+        }
+    }
     auto after = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(after - before);
-    MPI_Barrier(comm);
-    if (myRank == 0) cout << "Clustered in " << duration.count() << "ms." << endl;
+    if (myRank == 0) cout << "Clustered after " << epoch << " epochs in " << duration.count() << "ms." << endl;
 
     // Retrieve point data from each thread
-    MPI_Gatherv(&myData[0], myDataCount, mpi_point_type, &points[0], dataCounts, displacements, mpi_point_type, 0, comm);
-
+    MPI_Gatherv(&myData[0], myDataCount, mpi_point_type, &points[0], dataCounts, displacements, mpi_point_type, 0,
+                comm);
     // Write to file
-    if (myRank == 0) writeCSV("dist_gpu.csv", points, n);
-
-    // Cleanup memory
     if (myRank == 0) {
-        delete[] points;
-        delete[] centroids;
-        delete[] nPoints;
-        delete[] sumX;
-        delete[] sumY;
-        delete[] sumZ;
+        string outpath;
+        outpath.append("dist_gpu_").append(to_string(threads)).append(".csv");
+        writeCSV(outpath, points, n);
     }
 
     MPI_Finalize();
