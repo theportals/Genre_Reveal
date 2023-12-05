@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
     }
     after = chrono::high_resolution_clock::now();
     duration = chrono::duration_cast<chrono::milliseconds>(after - before);
-    cout << "Clustered with " << epochs << " epochs in " << duration.count() << "ms." << endl;
+    cout << "Clustered with " << epochs << " epochs in " << duration.count() << "ms, with a block size of " << blockSize << "." << endl;
 
     // Copy converged points from device
     checkCuda(cudaMemcpy(points_h, points_d, sizeof(Point) * points.size(), cudaMemcpyDeviceToHost), "Could not copy converged points from device.");
