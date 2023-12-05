@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     ycol = argv[5];
     zcol = argv[6];
 
+
     // Read from csv file
     auto before = chrono::high_resolution_clock::now();
     cout << "Loading points from csv (this may take a while)..." << endl;
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
     cout << points.size() << " points loaded in " << duration.count() << "ms." << endl;
 
     // Cluster centroids
-    cout << "Beginning clustering (this will definitely take a while)..." << endl;
+    cout << "Beginning clustering..." << endl;
     before = chrono::high_resolution_clock::now();
     int epochsTaken = kMeansClustering(&points, k);
     after = chrono::high_resolution_clock::now();

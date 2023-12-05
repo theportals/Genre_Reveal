@@ -15,7 +15,7 @@ inline cudaError_t checkCuda(cudaError_t result, string errorMessage) {
         fprintf(stderr, "%s\n", errorMessage.c_str());
         fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
     }
-    return result;
+    exit(-1);
 }
 
 __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
