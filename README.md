@@ -15,6 +15,8 @@ After which, executables can be found in `<output directory>/bin`.
 
 For Windows users, please note that Microsoft Visual Studio must be installed, as well as the NVIDIA Cuda Toolkit.
 
+Alternatively, each implementation can be built separately by following instructions in [doc/separate_build_instructions.md](doc/separate_build_instructions.md)
+
 ## Running
 Each executable will have usage printed if ran with the incorrect arguments. Generally, the usage is as follows:
 ```bash
@@ -46,4 +48,6 @@ An example output with k=5, x="danceability", y="speechiness", and z="acousticne
 <p align="center">
     <img src="doc/example_visualization.png">
 </p>
+
+Note that your output may look slightly different, depending on how different systems seed their random number generators.
 

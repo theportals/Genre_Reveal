@@ -14,6 +14,7 @@ inline cudaError_t checkCuda(cudaError_t result, string errorMessage) {
     if (result != cudaSuccess) {
         fprintf(stderr, "%s\n", errorMessage.c_str());
         fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+        exit(-1);
     }
     return result;
 }

@@ -3,7 +3,6 @@
 // Taken from tutorial at http://reasonabledeviations.com/2019/10/02/k-means-in-cpp/
 //
 
-#include <fstream>
 #include <iostream>
 #include <vector>
 #include <chrono>

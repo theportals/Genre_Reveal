@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         auto before = chrono::high_resolution_clock::now();
         cout << "Reading points from csv (this may take a while)..." << endl;
         points = readcsv(filepath, xcol, ycol, zcol);
-        dataSize = points.size();
+        dataSize = (int) points.size();
         auto after = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(after - before);
         cout << dataSize << " points loaded in " << duration.count() << "ms." << endl;
@@ -95,11 +95,11 @@ int main(int argc, char* argv[]) {
         srand(123);
         for (int i = 0; i < k; i++) {
             centroids[i] = points[rand() % dataSize];
-            printf("Centroid %d: (%f, %f, %f)\n", i, centroids[i].x, centroids[i].y, centroids[i].z);
+//            printf("Centroid %d: (%f, %f, %f)\n", i, centroids[i].x, centroids[i].y, centroids[i].z);
         }
     }
 
-    MPI_Bcast(&centroids, k, mpi_point_type, 0, comm);
+    MPI_Bcast(centroids, k, mpi_point_type, 0, comm);
 
     auto dataCounts = new int[threads];
     auto displacements = new int[threads];
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
             runningDisplacements += c;
         }
     }
-    MPI_Bcast(&dataCounts, threads, MPI_INT, 0, comm);
+    MPI_Bcast(dataCounts, threads, MPI_INT, 0, comm);
     int myDataCount = dataCounts[my_rank];
 
     vector<Point> myData(myDataCount);
@@ -137,14 +137,14 @@ int main(int argc, char* argv[]) {
     bool hasConverged = false;
     while (!hasConverged) {
         epoch++;
-        if (my_rank == 0) {
-            printf("Epoch %d: \n", epoch);
-            for (int i = 0; i < k; i++) {
-                Point c = centroids[i];
-                printf("    c %d: (%f, %f, %f)\n", i, c.x, c.y, c.z);
-            }
-            printf("\n");
-        }
+//        if (my_rank == 0) {
+//            printf("Epoch %d: \n", epoch);
+//            for (int i = 0; i < k; i++) {
+//                Point c = centroids[i];
+//                printf("    c %d: (%f, %f, %f)\n", i, c.x, c.y, c.z);
+//            }
+//            printf("\n");
+//        }
         // Assign each point to the nearest centroid
         for (auto &p : myData) {
             for (int i = 0; i < k; i++) {
@@ -188,19 +188,19 @@ int main(int argc, char* argv[]) {
 
             p.minDist = DBL_MAX; // reset distance
         }
-        MPI_Reduce(&sumX, &sumX_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(&sumY, &sumY_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(&sumZ, &sumZ_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(&nPoints, &nPoints_r, k, MPI_INT, MPI_SUM, 0, comm);
+        MPI_Reduce(sumX, sumX_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(sumY, sumY_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(sumZ, sumZ_r, k, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(nPoints, nPoints_r, k, MPI_INT, MPI_SUM, 0, comm);
 
-        if (my_rank == 0) {
-            printf("    sums:\n");
-            for (int i = 0; i < k; i++) {
-                printf("        %d: (%f, %f, %f), %d\n", i, sumX_r[i], sumY_r[i], sumZ_r[i], nPoints_r[i]);
-
-            }
-            printf("\n");
-        }
+//        if (my_rank == 0) {
+//            printf("    sums:\n");
+//            for (int i = 0; i < k; i++) {
+//                printf("        %d: (%f, %f, %f), %d\n", i, sumX_r[i], sumY_r[i], sumZ_r[i], nPoints_r[i]);
+//
+//            }
+//            printf("\n");
+//        }
 
         // Compute the new centroids on rank 0
         bool shouldEnd = true;
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Send the centroids back out to the other cores
-        MPI_Bcast(&centroids, k, mpi_point_type, 0, comm);
+        MPI_Bcast(centroids, k, mpi_point_type, 0, comm);
         if (my_rank == 0) hasConverged = shouldEnd;
         MPI_Bcast(&hasConverged, 1, MPI_C_BOOL, 0, comm);
     }
@@ -238,7 +238,10 @@ int main(int argc, char* argv[]) {
 
     // Write to file
     if (my_rank == 0) {
-        writeCSV("dist_cpu.csv", points);
+        string base = "dist_cpu_";
+        string extension = ".csv";
+        string path = base.append(to_string(threads)).append(extension);
+        writeCSV(path, points);
     }
     // Close MPI
     MPI_Op_free(&mpi_sum_points_op);
