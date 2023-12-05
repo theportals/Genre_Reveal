@@ -62,6 +62,11 @@ public:
         return data;
     }
 
+    // Get header information
+    const std::vector<std::string>& getHeader() const {
+        return header;
+    }
+
 private:
     void parseLine(const std::string& line, std::vector<std::string>& elements) const {
         std::stringstream ss(line);
@@ -91,6 +96,13 @@ int main() {
                 std::cout << value << "\t";
             }
             std::cout << std::endl;
+        }
+
+        // Access header
+        const std::vector<std::string>& header = csvParser.getHeader();
+        std::cout << "Header: ";
+        for (const auto& column : header) {
+            std::cout << column << "\t";
         }
     }
 

@@ -6,7 +6,7 @@
 #ifndef GENRE_REVEAL_POINT_H
 #define GENRE_REVEAL_POINT_H
 #include <vector>
-#include "csv-parser/csv.h"
+#include "csv-parser/csv.hpp"
 #include <cfloat>
 
 using namespace std;
@@ -53,14 +53,30 @@ vector<Point> readcsv(const string& filepath, const string& xcol, const string& 
     const auto& data = csvParser.getData();
 
     vector<Point> points;
-    double x, y, z;
+
+    // Find column indices
+    int xcolIndex = -1, ycolIndex = -1, zcolIndex = -1;
+    for (size_t i = 0; i < csvParser.getHeader().size(); ++i) {
+        if (csvParser.getHeader()[i] == xcol) xcolIndex = i;
+        if (csvParser.getHeader()[i] == ycol) ycolIndex = i;
+        if (csvParser.getHeader()[i] == zcol) zcolIndex = i;
+    }
+
+    if (xcolIndex == -1 || ycolIndex == -1 || zcolIndex == -1) {
+        cerr << "One or more specified columns not found in CSV file." << endl;
+        exit(2);
+    }
 
     for (const auto& row : data) {
         double x, y, z;
         
-        if (istringstream(row[xcol]) >> x && istringstream(row[ycol]) >> y && istringstream(row[zcol]) >> z) {
+        try {
+            x = stod(row[xcolIndex]);
+            y = stod(row[ycolIndex]);
+            z = stod(row[zcolIndex]);
+
             points.emplace_back(x, y, z);
-        } else {
+        } catch (const std::exception& e) {
             cerr << "Error converting values to numeric in row." << endl;
             exit(2);
         }
