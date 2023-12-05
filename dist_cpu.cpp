@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(&dataSize, 1, MPI_INT, 0, comm);
     MPI_Bcast(&k, 1, MPI_INT, 0, comm);
 
-    // It's easier to MPI_Bcast arrays over than vectors
+    // It's easier to MPI_Bcast arrays rather than vectors
     auto centroids = new Point[k];
     if (my_rank == 0) {
         // Pick k points at random to create centroids
@@ -104,12 +104,12 @@ int main(int argc, char* argv[]) {
     auto dataCounts = new int[threads];
     auto displacements = new int[threads];
     if (my_rank == 0) {
-        // Figure out how many numbers each process should get
+        // Figure out how many points each process should get
         int runningDisplacements = 0;
         for (int i = 0; i < threads; i++) {
             int c = dataSize / threads;
             if (dataSize % threads != 0 && i < dataSize % threads) {
-                // If data doesn't divide evenly, give the first few threads an extra count
+                // If data doesn't divide evenly, give the first few threads an extra point
                 c += 1;
             }
             dataCounts[i] = c;

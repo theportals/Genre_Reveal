@@ -8,7 +8,7 @@
 #include <cuda_runtime.h>
 #include "../point.h"
 
-inline cudaError_t checkCuda(cudaError_t result, string errorMessage) {
+inline cudaError_t checkCuda(cudaError_t result, const string& errorMessage) {
     if (result != cudaSuccess) {
         fprintf(stderr, "%s\n", errorMessage.c_str());
         fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
@@ -19,7 +19,7 @@ inline cudaError_t checkCuda(cudaError_t result, string errorMessage) {
 
 // Function to perform atomic add on a double
 __device__ double atomicAddDouble(double* address, double val) {
-    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    auto* address_as_ull = (unsigned long long int*)address;
     unsigned long long int old_val, new_val;
     do {
         old_val = *address_as_ull;
@@ -50,15 +50,17 @@ __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, d
         atomicAddDouble(&sumY[cluster], p.y);
         atomicAddDouble(&sumZ[cluster], p.z);
 
+//        printf("Assigning point %d to cluster %d\n", tid, cluster);
+
         p.minDist = DBL_MAX;
         points[tid] = p;
     }
 }
 
-extern "C" void launch_update_centroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n) {
+extern "C" void launch_update_centroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n, int thread) {
     //Dimensions
     int blockSize = 128;
-    int numBlocks = (n + blockSize - 1) / blockSize;
+    int numBlocks = ceil((double) n / blockSize);
 
     // GPU memory allocation
     Point* points_d;
@@ -81,10 +83,14 @@ extern "C" void launch_update_centroids(Point* points, Point* centroids, int* nP
     checkCuda(cudaMemcpy(sumX_d, sumX, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumX.");
     checkCuda(cudaMemcpy(sumY_d, sumY, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumY.");
     checkCuda(cudaMemcpy(sumZ_d, sumZ, sizeof(double) * k, cudaMemcpyHostToDevice), "Could not copy sumZ.");
+
+    // Run kernel
     updateCentroids<<<numBlocks, blockSize>>> (points_d, centroids_d, nPoints_d, sumX_d, sumY_d, sumZ_d, k, n);
 
     // Wait for the kernel to finish
-    checkCuda(cudaDeviceSynchronize(), "");
+    string message;
+    message.append("Thread ").append(to_string(thread)).append(" could not run kernel.");
+    checkCuda(cudaDeviceSynchronize(), message);
 
     // Copy the result back from GPU to CPU
     checkCuda(cudaMemcpy(points, points_d, sizeof(Point) * n, cudaMemcpyDeviceToHost), "Could not copy points from device.");
