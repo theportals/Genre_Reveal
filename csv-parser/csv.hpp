@@ -24,7 +24,7 @@ public:
         std::string line;
         if (std::getline(file, line)) {
             // Parse header
-            parseLine(line, header);
+            header = parseLine(line);
         } else {
             std::cerr << "Empty file: " << filename << std::endl;
             return false;
@@ -32,8 +32,8 @@ public:
 
         while (std::getline(file, line)) {
             // Parse data rows
-            std::vector<std::string> row;
-            parseLine(line, row);
+            std::vector<std::string> row = parseLine(line);
+            parseLine(line);
             data.push_back(row);
         }
 
@@ -68,21 +68,30 @@ public:
     }
 
 private:
-    void parseLine(const std::string& line, std::vector<std::string>& elements) const {
-        std::stringstream ss(line);
-        std::string element;
-
-        while (std::getline(ss, element, delimiter)) {
-            elements.push_back(element);
-        }
-    }
-
     std::string filename;
     char delimiter;
     std::vector<std::string> header;
     std::vector<std::vector<std::string>> data;
-};
 
+    std::vector<std::string> parseLine(const std::string& line) const {
+        std::vector<std::string> elements;
+        std::stringstream ss(line);
+        std::string element;
+
+        while (std::getline(ss, element, delimiter)) {
+            // Check if the element is quoted
+            if (!element.empty() && element.front() == '"' && element.back() == '"') {
+                // Remove quotes and add to the vector
+                elements.push_back(element.substr(1, element.size() - 2));
+            } else {
+                elements.push_back(element);
+            }
+        }
+
+        return elements;
+    }
+};
+/*
 int main() {
     CSVParser csvParser("example.csv");
 
@@ -108,3 +117,4 @@ int main() {
 
     return 0;
 }
+*/

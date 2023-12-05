@@ -66,8 +66,9 @@ vector<Point> readcsv(const string& filepath, const string& xcol, const string& 
         cerr << "One or more specified columns not found in CSV file." << endl;
         exit(2);
     }
-
+    int count = 0;
     for (const auto& row : data) {
+        count++;
         double x, y, z;
         
         try {
@@ -77,6 +78,7 @@ vector<Point> readcsv(const string& filepath, const string& xcol, const string& 
 
             points.emplace_back(x, y, z);
         } catch (const std::exception& e) {
+            std :: cout << "X: " << row[xcolIndex] << " Y: " << row[ycolIndex] << " Z: " << row[zcolIndex] << " Count: " << count; 
             cerr << "Error converting values to numeric in row." << endl;
             exit(2);
         }
