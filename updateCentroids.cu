@@ -1,12 +1,23 @@
 /*
     Created by Bridger 12/4/2023
     Modeled after shared_gpu
-    Compilation: nvcc -c multiply.cu -o multiply.exe
+    Compilation: nvcc -c updateCentroids.cu -o updateCentroids.exe
 */
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include "point.h"
+
+// Function to perform atomic add on a double
+__device__ double atomicAddDouble(double* address, double val) {
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old_val, new_val;
+    do {
+        old_val = *address_as_ull;
+        new_val = __double_as_longlong(val + __longlong_as_double(old_val));
+    } while (atomicCAS(address_as_ull, old_val, new_val) != old_val);
+    return __longlong_as_double(old_val);
+}
 
 __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n) {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -26,9 +37,9 @@ __global__ void updateCentroids(Point* points, Point* centroids, int* nPoints, d
 
         int cluster = p.cluster;
         atomicAdd(&nPoints[cluster], 1);
-        atomicAdd(&sumX[cluster], p.x);
-        atomicAdd(&sumY[cluster], p.y);
-        atomicAdd(&sumZ[cluster], p.z);
+        atomicAddDouble(&sumX[cluster], p.x);
+        atomicAddDouble(&sumY[cluster], p.y);
+        atomicAddDouble(&sumZ[cluster], p.z);
 
         p.minDist = DBL_MAX;
         points[tid] = p;

@@ -5,161 +5,110 @@
     Compilation: mpixx -o dist_gpu dist_gpu.cpp -lcudart
 */
 
+// dist_gpu.cpp
+
 #include <iostream>
+#include <fstream>
+#include <vector>
 #include <mpi.h>
 #include "point.h"
 
-using namespace std;
-
-string xcol;
-string ycol;
-string zcol;
-
-double converge_threshold = 1e-7;
 extern "C" {
-    void launch_updateCentroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
+    void launch_update_centroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
 }
 
+int main(int argc, char** argv) {
+    int rank, threads;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &threads);
 
-
-void sum_points(void *inbuf, void *inoutbuf, int *len, MPI_Datatype *type);
-
-int main(int argc, char* argv[]) {
-    string filepath;
-
-    // Initialize MPI
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Init(nullptr, nullptr);
-    int threads;
-    MPI_Comm_size(comm, &threads);
-    int my_rank;
-    MPI_Comm_rank(comm, &my_rank);
-
-    if (argc != 7) {
-        if (my_rank == 0) {
-            cout << "Usage: mpiexec -n <number of processes> dist_gpu.exe <filepath to csv> <number of clusters> <x column key> <y column key> <z column key>" << endl;
+    if (argc != 6) {
+        if (rank == 0) {
+            std::cout << "Usage: mpiexec -n <number of processes> dist_gpu.exe <filepath to csv> <number of clusters> <x column key> <y column key> <z column key>" << std::endl;
         }
         MPI_Finalize();
         return -1;
     }
 
-    filepath = argv[1];
+    std::string filepath = argv[1];
     int k = strtol(argv[2], nullptr, 10);
-    xcol = argv[3];
-    ycol = argv[4];
-    zcol = argv[5];
+    std::string xcol = argv[3];
+    std::string ycol = argv[4];
+    std::string zcol = argv[5];
 
-    // Read data on rank 0
-    vector<Point> points;
-    int dataSize;
-
-    if (my_rank == 0) {
-        auto before = chrono::high_resolution_clock::now();
-        cout << "Loading points from csv (this may take a while)..." << endl;
-        points = readcsv(filepath, xcol, ycol, zcol);
-        dataSize = points.size();
-        auto after = chrono::high_resolution_clock::now();
-        auto duration = chrono::duration_cast<chrono::milliseconds>(after - before);
-        cout << dataSize << " points loaded in " << duration.count() << "ms." << endl;
-    }
-
-    // Broadcast data size to all ranks
-    MPI_Bcast(&dataSize, 1, MPI_INT, 0, comm);
-
-    // Scatter data among ranks
-    int myDataCount = dataSize / threads;
-    vector<Point> myData(myDataCount);
-    MPI_Scatter(&points[0], myDataCount, mpi_point_type, &myData[0], myDataCount, mpi_point_type, 0, comm);
-
-    // Initialize GPU variables
-    vector<Point> centroids;
-    if (my_rank == 0) {
-        srand(123);
-        for (int i = 0; i < k; i++) {
-            centroids.push_back(points[rand() % dataSize]);
-        }
-    }
-
-    // Broadcast initial centroids to all ranks
-    MPI_Bcast(&centroids[0], k, mpi_point_type, 0, comm);
-
-    //got here
-
-    // GPU clustering
-    int epochs = 0;
-    bool hasConverged = false;
+    // Load data from CSV using readcsv function
     auto before = chrono::high_resolution_clock::now();
-    while (!hasConverged) {
-        epochs++;
-
-        // Invoke GPU kernel for clustering
-        launch_updateCentroids(points, centroids, nPoints, sumX, sumY, sumZ, k, n);
-
-        // MPI reduce to gather sums and counts from all ranks
-        MPI_Reduce(sumX_d, sumX_d, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(sumY_d, sumY_d, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(sumZ_d, sumZ_d, k, MPI_DOUBLE, MPI_SUM, 0, comm);
-        MPI_Reduce(nPoints_d, nPoints_d, k, MPI_INT, MPI_SUM, 0, comm);
-
-        // Update centroids on rank 0
-        if (my_rank == 0) {
-            hasConverged = true;
-
-            for (int j = 0; j < k; j++) {
-                double oldx = centroids[j].x;
-                double oldy = centroids[j].y;
-                double oldz = centroids[j].z;
-
-                centroids[j].x = sumX_d[j] / nPoints_d[j];
-                centroids[j].y = sumY_d[j] / nPoints_d[j];
-                centroids[j].z = sumZ_d[j] / nPoints_d[j];
-
-                double distMoved = (centroids[j].x - oldx) * (centroids[j].x - oldx) +
-                                   (centroids[j].y - oldy) * (centroids[j].y - oldy) +
-                                   (centroids[j].z - oldz) * (centroids[j].z - oldz);
-
-                if (distMoved > converge_threshold)
-                    hasConverged = false;
-            }
-        }
-
-        // Broadcast the convergence status
-        MPI_Bcast(&hasConverged, 1, MPI_C_BOOL, 0, comm);
-
-        // Broadcast updated centroids to all ranks
-        MPI_Bcast(&centroids[0], k, mpi_point_type, 0, comm);
-    }
-
+    cout << "Loading points from csv (this may take a while)..." << endl;
+    vector<Point> points_data = readcsv(filepath, xcol, ycol, zcol);
     auto after = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(after - before);
+    cout << points_data.size() << " points loaded in " << duration.count() << "ms." << endl;
+    int n = points_data.size();
 
-    // Gather all clustered points on rank 0
-    MPI_Gather(points_d, myDataCount, mpi_point_type, &myData[0], myDataCount, mpi_point_type, 0, comm);
+    // MPI requires we specify how Points are transferred
+    int nitems = 5;
+    int blocklengths[5] = {1,1,1,1,1};
+    MPI_Datatype types[5] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_DOUBLE};
+    MPI_Datatype mpi_point_type;
+    MPI_Aint offsets[5];
+    offsets[0]=offsetof(Point, x);
+    offsets[1]=offsetof(Point, y);
+    offsets[2]=offsetof(Point, z);
+    offsets[3]=offsetof(Point, cluster);
+    offsets[4]=offsetof(Point, minDist);
+    MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpi_point_type);
+    MPI_Type_commit(&mpi_point_type);
 
-    // Write to file on rank 0
-    if (my_rank == 0) {
-        ofstream myfile;
-        myfile.open("output.csv");
-        myfile << "x,y,z,c" << endl;
-        for (auto &point : points) {
-            myfile << point.x << "," << point.y << "," << point.z << "," << point.cluster << endl;
+    // Allocate and initialize arrays on rank 0
+    Point* points = nullptr;
+    Point* centroids = nullptr;
+    int* nPoints = nullptr;
+    double* sumX = nullptr;
+    double* sumY = nullptr;
+    double* sumZ = nullptr;
+
+    if (rank == 0) {
+        points = new Point[n];
+        centroids = new Point[k];
+        nPoints = new int[k]();
+        sumX = new double[k]();
+        sumY = new double[k]();
+        sumZ = new double[k]();
+
+        // Initialize centroids randomly
+        srand(123);
+        for (int i = 0; i < k; ++i) {
+            centroids[i] = points_data[rand() % n];
         }
-        myfile.close();
-        cout << "Written to output.csv" << endl;
+
+        // Scatter data to all ranks
+        MPI_Scatter(points_data.data(), n / threads, mpi_point_type, points, n / threads, mpi_point_type, 0, MPI_COMM_WORLD);
+    }
+
+    // Broadcast centroids to all ranks
+    MPI_Bcast(centroids, k, mpi_point_type, 0, MPI_COMM_WORLD);
+
+    // Call the CUDA function
+    before = chrono::high_resolution_clock::now();
+    launch_update_centroids(points, centroids, nPoints, sumX, sumY, sumZ, k, n);
+    after = chrono::high_resolution_clock::now();
+    duration = chrono::duration_cast<chrono::milliseconds>(after - before);
+    cout << "Clustered in " << duration.count() << "ms." << endl;
+
+    // Write to file
+    writeCSV("dist_gpu.csv", points, n);
+
+    // Cleanup memory
+    if (rank == 0) {
+        delete[] points;
+        delete[] centroids;
+        delete[] nPoints;
+        delete[] sumX;
+        delete[] sumY;
+        delete[] sumZ;
     }
 
     MPI_Finalize();
-
     return 0;
-}
-
-void sum_points(void *inbuf, void *inoutbuf, int *len, MPI_Datatype *type) {
-    auto *invals = (Point *) inbuf;
-    auto *inoutvals = (Point *) inoutbuf;
-
-    for (int i = 0; i < *len; i++) {
-        inoutvals[i].x += invals[i].x;
-        inoutvals[i].y += invals[i].y;
-        inoutvals[i].z += invals[i].z;
-    }
 }
