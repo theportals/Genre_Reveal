@@ -68,7 +68,7 @@ SOFTWARE.
 #ifndef MIO_MMAP_HEADER
 #define MIO_MMAP_HEADER
 
-// #csv-parser "mio/page.hpp"
+// #include "mio/page.hpp"
 /* Copyright 2017 https://github.com/mandreyel
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -95,7 +95,7 @@ SOFTWARE.
 #ifdef _WIN32
 # include <windows.h>
 #else
-# csv-parser <unistd.h>
+# include <unistd.h>
 #endif
 
 namespace mio {
@@ -235,29 +235,29 @@ namespace mio {
 
 #ifdef __cpp_exceptions
         /**
-         * The same as invoking the `map` function, except any error that may occur
-         * while establishing the mapping is wrapped in a `std::system_error` and is
-         * thrown.
-         */
-        template<typename String>
-        basic_mmap(const String& path, const size_type offset = 0, const size_type length = map_entire_file)
-        {
-            std::error_code error;
-            map(path, offset, length, error);
-            if(error) { throw std::system_error(error); }
-        }
+     * The same as invoking the `map` function, except any error that may occur
+     * while establishing the mapping is wrapped in a `std::system_error` and is
+     * thrown.
+     */
+    template<typename String>
+    basic_mmap(const String& path, const size_type offset = 0, const size_type length = map_entire_file)
+    {
+        std::error_code error;
+        map(path, offset, length, error);
+        if(error) { throw std::system_error(error); }
+    }
 
-        /**
-         * The same as invoking the `map` function, except any error that may occur
-         * while establishing the mapping is wrapped in a `std::system_error` and is
-         * thrown.
-         */
-        basic_mmap(const handle_type handle, const size_type offset = 0, const size_type length = map_entire_file)
-        {
-            std::error_code error;
-            map(handle, offset, length, error);
-            if(error) { throw std::system_error(error); }
-        }
+    /**
+     * The same as invoking the `map` function, except any error that may occur
+     * while establishing the mapping is wrapped in a `std::system_error` and is
+     * thrown.
+     */
+    basic_mmap(const handle_type handle, const size_type offset = 0, const size_type length = map_entire_file)
+    {
+        std::error_code error;
+        map(handle, offset, length, error);
+        if(error) { throw std::system_error(error); }
+    }
 #endif // __cpp_exceptions
 
         /**
@@ -613,7 +613,7 @@ namespace mio {
 
 } // namespace mio
 
-// #csv-parser "detail/mmap.ipp"
+// #include "detail/mmap.ipp"
 /* Copyright 2017 https://github.com/mandreyel
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -637,11 +637,11 @@ namespace mio {
 #ifndef MIO_BASIC_MMAP_IMPL
 #define MIO_BASIC_MMAP_IMPL
 
-// #csv-parser "mio/mmap.hpp"
+// #include "mio/mmap.hpp"
 
-// #csv-parser "mio/page.hpp"
+// #include "mio/page.hpp"
 
-// #csv-parser "mio/detail/string_util.hpp"
+// #include "mio/detail/string_util.hpp"
 /* Copyright 2017 https://github.com/mandreyel
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -817,10 +817,10 @@ namespace mio {
 #include <algorithm>
 
 #ifndef _WIN32
-# csv-parser <unistd.h>
-# csv-parser <fcntl.h>
-# csv-parser <sys/mman.h>
-# csv-parser <sys/stat.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <sys/mman.h>
+# include <sys/stat.h>
 #endif
 
 namespace mio {
@@ -1334,9 +1334,9 @@ namespace mio {
 #define MIO_PAGE_HEADER
 
 #ifdef _WIN32
-# csv-parser <windows.h>
+# include <windows.h>
 #else
-# csv-parser <unistd.h>
+# include <unistd.h>
 #endif
 
 namespace mio {
@@ -1411,7 +1411,7 @@ inline size_t make_offset_page_aligned(size_t offset) noexcept
 #ifndef MIO_SHARED_MMAP_HEADER
 #define MIO_SHARED_MMAP_HEADER
 
-// #csv-parser "mio/mmap.hpp"
+// #include "mio/mmap.hpp"
 
 
 #include <system_error> // std::error_code
@@ -1480,29 +1480,29 @@ namespace mio {
 
 #ifdef __cpp_exceptions
         /**
-         * The same as invoking the `map` function, except any error that may occur
-         * while establishing the mapping is wrapped in a `std::system_error` and is
-         * thrown.
-         */
-        template<typename String>
-        basic_shared_mmap(const String& path, const size_type offset = 0, const size_type length = map_entire_file)
-        {
-            std::error_code error;
-            map(path, offset, length, error);
-            if(error) { throw std::system_error(error); }
-        }
+     * The same as invoking the `map` function, except any error that may occur
+     * while establishing the mapping is wrapped in a `std::system_error` and is
+     * thrown.
+     */
+    template<typename String>
+    basic_shared_mmap(const String& path, const size_type offset = 0, const size_type length = map_entire_file)
+    {
+        std::error_code error;
+        map(path, offset, length, error);
+        if(error) { throw std::system_error(error); }
+    }
 
-        /**
-         * The same as invoking the `map` function, except any error that may occur
-         * while establishing the mapping is wrapped in a `std::system_error` and is
-         * thrown.
-         */
-        basic_shared_mmap(const handle_type handle, const size_type offset = 0, const size_type length = map_entire_file)
-        {
-            std::error_code error;
-            map(handle, offset, length, error);
-            if(error) { throw std::system_error(error); }
-        }
+    /**
+     * The same as invoking the `map` function, except any error that may occur
+     * while establishing the mapping is wrapped in a `std::system_error` and is
+     * thrown.
+     */
+    basic_shared_mmap(const handle_type handle, const size_type offset = 0, const size_type length = map_entire_file)
+    {
+        std::error_code error;
+        map(handle, offset, length, error);
+        if(error) { throw std::system_error(error); }
+    }
 #endif // __cpp_exceptions
 
         /**
@@ -1835,7 +1835,7 @@ namespace mio {
 # undef max
 # undef min
 #elif defined(__linux__)
-# csv-parser <unistd.h>
+# include <unistd.h>
 #endif
 
 /** Helper macro which should be #defined as "inline"
@@ -2189,19 +2189,19 @@ namespace nonstd {
 
 // Additional includes:
 
-#csv-parser <algorithm>
-#csv-parser <cassert>
-#csv-parser <iterator>
-#csv-parser <limits>
-#csv-parser <ostream>
-#csv-parser <string>   // std::char_traits<>
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <limits>
+#include <ostream>
+#include <string>   // std::char_traits<>
 
 #if ! nssv_CONFIG_NO_EXCEPTIONS
-# csv-parser <stdexcept>
+# include <stdexcept>
 #endif
 
 #if nssv_CPP11_OR_GREATER
-# csv-parser <type_traits>
+# include <type_traits>
 #endif
 
 // Clang, GNUC, MSVC warning suppression macros:
@@ -3112,7 +3112,7 @@ using sv_lite::to_string_view;
 
 #if nssv_HAVE_STD_HASH
 
-#csv-parser <functional>
+#include <functional>
 
 namespace std {
 
@@ -4409,7 +4409,7 @@ HEDLEY_DIAGNOSTIC_POP
 #    if defined(__INTPTR_TYPE__)
 #      define HEDLEY__IS_CONSTEXPR(expr) __builtin_types_compatible_p(__typeof__((1 ? (void*) ((__INTPTR_TYPE__) ((expr) * 0)) : (int*) 0)), int*)
 #    else
-#      csv-parser <stdint.h>
+#      include <stdint.h>
 #      define HEDLEY__IS_CONSTEXPR(expr) __builtin_types_compatible_p(__typeof__((1 ? (void*) ((intptr_t) ((expr) * 0)) : (int*) 0)), int*)
 #    endif
 #  elif \
@@ -4422,7 +4422,7 @@ HEDLEY_DIAGNOSTIC_POP
 #    if defined(__INTPTR_TYPE__)
 #      define HEDLEY__IS_CONSTEXPR(expr) _Generic((1 ? (void*) ((__INTPTR_TYPE__) ((expr) * 0)) : (int*) 0), int*: 1, void*: 0)
 #    else
-#      csv-parser <stdint.h>
+#      include <stdint.h>
 #      define HEDLEY__IS_CONSTEXPR(expr) _Generic((1 ? (void*) ((intptr_t) * 0) : (int*) 0), int*: 1, void*: 0)
 #    endif
 #  elif \
@@ -4704,54 +4704,54 @@ namespace csv {
 #endif
 
 #ifdef CSV_HAS_CXX17
-#include <string_view>
-    /** @typedef string_view
-     *  The string_view class used by this library.
-     */
+    #include <string_view>
+     /** @typedef string_view
+      *  The string_view class used by this library.
+      */
     using string_view = std::string_view;
 #else
     /** @typedef string_view
-      *  The string_view class used by this library.
-      */
+     *  The string_view class used by this library.
+     */
     using string_view = nonstd::string_view;
 #endif
 
 #ifdef CSV_HAS_CXX17
-#define IF_CONSTEXPR if constexpr
-#define CONSTEXPR_VALUE constexpr
+    #define IF_CONSTEXPR if constexpr
+    #define CONSTEXPR_VALUE constexpr
 
-#define CONSTEXPR_17 constexpr
+    #define CONSTEXPR_17 constexpr
 #else
-    #define IF_CONSTEXPR if
-    #define CONSTEXPR_VALUE const
+#define IF_CONSTEXPR if
+#define CONSTEXPR_VALUE const
 
-    #define CONSTEXPR_17 inline
+#define CONSTEXPR_17 inline
 #endif
 
 #ifdef CSV_HAS_CXX14
     template<bool B, class T = void>
     using enable_if_t = std::enable_if_t<B, T>;
 
-#define CONSTEXPR_14 constexpr
-#define CONSTEXPR_VALUE_14 constexpr
+    #define CONSTEXPR_14 constexpr
+    #define CONSTEXPR_VALUE_14 constexpr
 #else
     template<bool B, class T = void>
     using enable_if_t = typename std::enable_if<B, T>::type;
 
-    #define CONSTEXPR_14 inline
-    #define CONSTEXPR_VALUE_14 const
+#define CONSTEXPR_14 inline
+#define CONSTEXPR_VALUE_14 const
 #endif
 
     // Resolves g++ bug with regard to constexpr methods
     // See: https://stackoverflow.com/questions/36489369/constexpr-non-static-member-function-with-non-constexpr-constructor-gcc-clang-d
 #if defined __GNUC__ && !defined __clang__
-#if (__GNUC__ >= 7 &&__GNUC_MINOR__ >= 2) || (__GNUC__ >= 8)
-#define CONSTEXPR constexpr
-#endif
-#else
-    #ifdef CSV_HAS_CXX17
+    #if (__GNUC__ >= 7 &&__GNUC_MINOR__ >= 2) || (__GNUC__ >= 8)
         #define CONSTEXPR constexpr
     #endif
+#else
+#ifdef CSV_HAS_CXX17
+#define CONSTEXPR constexpr
+#endif
 #endif
 
 #ifndef CONSTEXPR
@@ -5039,7 +5039,7 @@ namespace csv {
         /**< Quote character */
         char quote_char = '"';
 
-        /**< Should be left empty unless file doesn't csv-parser header */
+        /**< Should be left empty unless file doesn't include header */
         std::vector<std::string> col_names = {};
 
         /**< Allow variable length columns? */
