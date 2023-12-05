@@ -11,11 +11,9 @@
 #include <fstream>
 #include <vector>
 #include <mpi.h>
-#include "point.h"
+#include "../point.h"
 
-extern "C" {
-    void launch_update_centroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
-}
+extern "C" void launch_update_centroids(Point* points, Point* centroids, int* nPoints, double* sumX, double* sumY, double* sumZ, int k, int n);
 
 int main(int argc, char** argv) {
     int rank, threads;

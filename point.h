@@ -43,7 +43,7 @@ struct Point {
  * @param zcol Feature title for the z-axis
  * @return points
  */
-vector<Point> readcsv(const string& filepath, const string& xcol, const string& ycol, const string& zcol) {
+static vector<Point> readcsv(const string& filepath, const string& xcol, const string& ycol, const string& zcol) {
     CSVReader reader(filepath);
     vector<Point> points;
     double x, y, z;
@@ -76,7 +76,7 @@ vector<Point> readcsv(const string& filepath, const string& xcol, const string& 
     return points;
 }
 
-static void writeCSV(string path, Point* points, int numPoints) {
+static void writeCSV(const string& path, Point* points, int numPoints) {
     ofstream myfile;
     myfile.open(path.c_str());
     myfile << "x,y,z,c" << endl;
@@ -89,8 +89,8 @@ static void writeCSV(string path, Point* points, int numPoints) {
 
 }
 
-static void writeCSV(string path, vector<Point> points) {
-    writeCSV(path, points.data(), points.size());
+static void writeCSV(const string& path, vector<Point> points) {
+    writeCSV(path, points.data(), (int) points.size());
 }
 
 #endif //GENRE_REVEAL_POINT_H
