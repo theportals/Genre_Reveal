@@ -24,6 +24,11 @@ Each executable will have usage printed if ran with the incorrect arguments. Gen
 ```
 The "column keys" refer to features as per the dataset, such as danceability, energy, speechiness, etc.
 
+For distributed implementations (`dist_cpu` and `dist_gpu`), `mpiexec` must be used in order to increase performance, i.e:
+```bash
+mpiexec -n <number of threads> <executable> <path to csv> <number of clussters> <x column key> <y column key> <z column key>
+```
+
 ## Approach Descriptions
 A description of each approach can be found in [doc/descriptions.md](doc/descriptions.md).
 
