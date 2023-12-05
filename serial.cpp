@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include "point.h"
+#include "point.hpp"
 
 using namespace std;
 

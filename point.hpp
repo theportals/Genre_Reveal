@@ -1,6 +1,6 @@
 //
 // Created by Tom on 11/16/2023.
-// Edited by Bridger to use new csv.h on 12/4/2023.
+// Edited by Bridger to use new csv.hpp on 12/4/2023.
 //
 
 #ifndef GENRE_REVEAL_POINT_H

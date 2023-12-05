@@ -1,6 +1,6 @@
 /*
     Created by Bridger 12/4/2023
-    To be used by point.h
+    To be used by point.hpp
 */
 
 

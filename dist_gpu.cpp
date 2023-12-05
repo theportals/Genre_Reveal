@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <mpi.h>
-#include "point.h"
+#include "point.hpp"
 
 using namespace std;
 

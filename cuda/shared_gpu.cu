@@ -2,7 +2,7 @@
 // Created by Tom on 11/29/2023.
 //
 #include <iostream>
-#include "../point.h"
+#include "../point.hpp"
 
 string xcol;
 string ycol;
